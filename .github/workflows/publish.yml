@@ -94,11 +94,26 @@ jobs:
         if: matrix.cross
         run: |
           sudo dpkg --add-architecture arm64
-          sudo bash -c 'cat > /etc/apt/sources.list.d/arm64.list << EOF
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs) main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-updates main restricted universe multiverse
-          EOF'
-          sudo sed -i 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+
+          # Pin existing sources to amd64 only (Noble uses DEB822 format)
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sudo sed -i 's/^Architectures:.*/Architectures: amd64/' /etc/apt/sources.list.d/ubuntu.sources
+            # If no Architectures line exists, add one after each Types line
+            sudo sed -i '/^Types:/a Architectures: amd64' /etc/apt/sources.list.d/ubuntu.sources
+            # Remove duplicate Architectures lines
+            sudo awk '!seen[$0]++ || !/^Architectures:/' /etc/apt/sources.list.d/ubuntu.sources | sudo tee /etc/apt/sources.list.d/ubuntu.sources.tmp > /dev/null
+            sudo mv /etc/apt/sources.list.d/ubuntu.sources.tmp /etc/apt/sources.list.d/ubuntu.sources
+          else
+            sudo sed -i 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          fi
+
+          # Add arm64 ports repo
+          CODENAME=$(lsb_release -cs)
+          sudo tee /etc/apt/sources.list.d/arm64-ports.list > /dev/null << EOF
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${CODENAME} main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${CODENAME}-updates main restricted universe multiverse
+          EOF
+
           sudo apt-get update
           sudo apt-get install -y clang llvm lld gcc-aarch64-linux-gnu zlib1g-dev:arm64
 
