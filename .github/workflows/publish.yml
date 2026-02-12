@@ -11,6 +11,8 @@ jobs:
   # ── Unit tests gate ──────────────────────────────────────────
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - name: Setup .NET 10
@@ -18,8 +20,12 @@ jobs:
         with:
           dotnet-version: "10.0.x"
           dotnet-quality: preview
+      - name: Restore
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
       - name: Test
-        run: dotnet test --configuration Release --filter "Category!=Integration"
+        run: dotnet test --no-build --configuration Release --filter "Category!=Integration"
 
   # ── NuGet package (framework-dependent tool) ─────────────────
   publish-nuget:
@@ -37,7 +43,7 @@ jobs:
       - name: Set version from tag
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
       - name: Build
-        run: dotnet build PackageUpdateSkill --configuration Release
+        run: dotnet build PackageUpdateSkill --configuration Release /p:Version=${{ env.VERSION }}
       - name: Pack
         run: dotnet pack PackageUpdateSkill --no-build --configuration Release --output ./nupkg /p:Version=${{ env.VERSION }}
       - name: Push to NuGet
@@ -46,6 +52,8 @@ jobs:
   # ── Native AOT binaries per platform ─────────────────────────
   build-native:
     needs: test
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
