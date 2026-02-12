@@ -34,4 +34,46 @@
     <None Include="..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
+  <!--
+    The Copilot SDK only downloads the CLI binary for the current build platform.
+    For a .NET tool package (PackAsTool), we need ALL platform binaries so the tool
+    works when installed on any OS. This target downloads all 6 platform variants
+    and includes them in the nupkg.
+  -->
+  <ItemGroup>
+    <_CopilotPlatforms Include="win32-x64" Rid="win-x64" Binary="copilot.exe" />
+    <_CopilotPlatforms Include="win32-arm64" Rid="win-arm64" Binary="copilot.exe" />
+    <_CopilotPlatforms Include="linux-x64" Rid="linux-x64" Binary="copilot" />
+    <_CopilotPlatforms Include="linux-arm64" Rid="linux-arm64" Binary="copilot" />
+    <_CopilotPlatforms Include="darwin-x64" Rid="osx-x64" Binary="copilot" />
+    <_CopilotPlatforms Include="darwin-arm64" Rid="osx-arm64" Binary="copilot" />
+  </ItemGroup>
+
+  <Target Name="_DownloadAllCopilotClis" AfterTargets="Publish" Condition="'$(PackAsTool)' == 'true'">
+    <PropertyGroup>
+      <_CopilotCliCacheRoot>$(IntermediateOutputPath)copilot-cli\$(CopilotCliVersion)</_CopilotCliCacheRoot>
+      <_TarCmd Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(SystemRoot)\System32\tar.exe</_TarCmd>
+      <_TarCmd Condition="'$(_TarCmd)' == ''">tar</_TarCmd>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)" Condition="!Exists('$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)\%(_CopilotPlatforms.Binary)')" />
+
+    <Message Importance="high" Text="Downloading Copilot CLI $(CopilotCliVersion) for %(_CopilotPlatforms.Identity)..."
+             Condition="!Exists('$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)\%(_CopilotPlatforms.Binary)')" />
+
+    <DownloadFile SourceUrl="https://registry.npmjs.org/@github/copilot-%(_CopilotPlatforms.Identity)/-/copilot-%(_CopilotPlatforms.Identity)-$(CopilotCliVersion).tgz"
+                  DestinationFolder="$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)"
+                  DestinationFileName="copilot.tgz"
+                  Condition="!Exists('$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)\%(_CopilotPlatforms.Binary)')" />
+
+    <Exec Command="&quot;$(_TarCmd)&quot; -xzf &quot;$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)\copilot.tgz&quot; --strip-components=1 -C &quot;$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)&quot;"
+          Condition="!Exists('$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)\%(_CopilotPlatforms.Binary)')" />
+
+    <!-- Copy all platform binaries into the publish runtimes folder so they get packed -->
+    <MakeDir Directories="$(PublishDir)runtimes\%(_CopilotPlatforms.Rid)\native" />
+    <Copy SourceFiles="$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)\%(_CopilotPlatforms.Binary)"
+          DestinationFolder="$(PublishDir)runtimes\%(_CopilotPlatforms.Rid)\native"
+          SkipUnchangedFiles="true" />
+  </Target>
+
 </Project>
