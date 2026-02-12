@@ -49,7 +49,7 @@ jobs:
       - name: Verify package was created
         run: ls -la ./nupkg/*.nupkg
       - name: Push to NuGet
-        if: secrets.NUGET_API_KEY != ''
+        if: ${{ secrets.NUGET_API_KEY != '' }}
         run: dotnet nuget push "./nupkg/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
 
   # ── Native AOT binaries per platform ─────────────────────────
