@@ -99,7 +99,7 @@ jobs:
             # If no Architectures line exists, add one after each Types line
             sudo sed -i '/^Types:/a Architectures: amd64' /etc/apt/sources.list.d/ubuntu.sources
             # Remove duplicate Architectures lines
-            sudo awk '!seen[$0]++ || !/^Architectures:/' /etc/apt/sources.list.d/ubuntu.sources | sudo tee /etc/apt/sources.list.d/ubuntu.sources.tmp > /dev/null
+            sudo awk '!/^Architectures:/ || !seen[$0]++' /etc/apt/sources.list.d/ubuntu.sources | sudo tee /etc/apt/sources.list.d/ubuntu.sources.tmp > /dev/null
             sudo mv /etc/apt/sources.list.d/ubuntu.sources.tmp /etc/apt/sources.list.d/ubuntu.sources
           else
             sudo sed -i 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
