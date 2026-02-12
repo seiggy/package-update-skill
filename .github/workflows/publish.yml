@@ -96,12 +96,12 @@ jobs:
           # Pin existing sources to amd64 only (Noble uses DEB822 format)
           if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
             sudo sed -i 's/^Architectures:.*/Architectures: amd64/' /etc/apt/sources.list.d/ubuntu.sources
-            # If no Architectures line exists, add one after each Types line
-            sudo sed -i '/^Types:/a Architectures: amd64' /etc/apt/sources.list.d/ubuntu.sources
-            # Remove duplicate Architectures lines
-            sudo awk '!/^Architectures:/ || !seen[$0]++' /etc/apt/sources.list.d/ubuntu.sources | sudo tee /etc/apt/sources.list.d/ubuntu.sources.tmp > /dev/null
-            sudo mv /etc/apt/sources.list.d/ubuntu.sources.tmp /etc/apt/sources.list.d/ubuntu.sources
+            # For any Types line that is not immediately followed by an Architectures line, add Architectures: amd64
+            sudo sed -i '/^Types:/ { n; /^Architectures:/! i\Architectures: amd64
+            }' /etc/apt/sources.list.d/ubuntu.sources
           else
+            sudo sed -i 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          fi
             sudo sed -i 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
           fi
 
