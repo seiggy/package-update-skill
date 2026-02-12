@@ -51,28 +51,28 @@
 
   <Target Name="_DownloadAllCopilotClis" AfterTargets="Publish" Condition="'$(PackAsTool)' == 'true'">
     <PropertyGroup>
-      <_CopilotCliCacheRoot>$(IntermediateOutputPath)copilot-cli\$(CopilotCliVersion)</_CopilotCliCacheRoot>
+      <_CopilotCliCacheRoot>$(IntermediateOutputPath)copilot-cli/$(CopilotCliVersion)</_CopilotCliCacheRoot>
       <_TarCmd Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(SystemRoot)\System32\tar.exe</_TarCmd>
       <_TarCmd Condition="'$(_TarCmd)' == ''">tar</_TarCmd>
     </PropertyGroup>
 
-    <MakeDir Directories="$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)" Condition="!Exists('$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)\%(_CopilotPlatforms.Binary)')" />
+    <MakeDir Directories="$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)" Condition="!Exists('$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/%(_CopilotPlatforms.Binary)')" />
 
     <Message Importance="high" Text="Downloading Copilot CLI $(CopilotCliVersion) for %(_CopilotPlatforms.Identity)..."
-             Condition="!Exists('$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)\%(_CopilotPlatforms.Binary)')" />
+             Condition="!Exists('$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/%(_CopilotPlatforms.Binary)')" />
 
     <DownloadFile SourceUrl="https://registry.npmjs.org/@github/copilot-%(_CopilotPlatforms.Identity)/-/copilot-%(_CopilotPlatforms.Identity)-$(CopilotCliVersion).tgz"
-                  DestinationFolder="$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)"
+                  DestinationFolder="$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)"
                   DestinationFileName="copilot.tgz"
-                  Condition="!Exists('$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)\%(_CopilotPlatforms.Binary)')" />
+                  Condition="!Exists('$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/%(_CopilotPlatforms.Binary)')" />
 
-    <Exec Command="&quot;$(_TarCmd)&quot; -xzf &quot;$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)\copilot.tgz&quot; --strip-components=1 -C &quot;$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)&quot;"
-          Condition="!Exists('$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)\%(_CopilotPlatforms.Binary)')" />
+    <Exec Command="&quot;$(_TarCmd)&quot; -xzf &quot;$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/copilot.tgz&quot; --strip-components=1 -C &quot;$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)&quot;"
+          Condition="!Exists('$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/%(_CopilotPlatforms.Binary)')" />
 
     <!-- Copy all platform binaries into the publish runtimes folder so they get packed -->
-    <MakeDir Directories="$(PublishDir)runtimes\%(_CopilotPlatforms.Rid)\native" />
-    <Copy SourceFiles="$(_CopilotCliCacheRoot)\%(_CopilotPlatforms.Identity)\%(_CopilotPlatforms.Binary)"
-          DestinationFolder="$(PublishDir)runtimes\%(_CopilotPlatforms.Rid)\native"
+    <MakeDir Directories="$(PublishDir)runtimes/%(_CopilotPlatforms.Rid)/native" />
+    <Copy SourceFiles="$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/%(_CopilotPlatforms.Binary)"
+          DestinationFolder="$(PublishDir)runtimes/%(_CopilotPlatforms.Rid)/native"
           SkipUnchangedFiles="true" />
   </Target>
 
