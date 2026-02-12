@@ -1,16 +1,81 @@
-name: Publish to NuGet
+name: Publish
 
 on:
   release:
     types: [published]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  publish:
+  # ── Unit tests gate ──────────────────────────────────────────
+  test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+          dotnet-quality: preview
+      - name: Restore
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+      - name: Test
+        run: dotnet test --no-build --configuration Release --filter "Category!=Integration"
 
+  # ── NuGet package (framework-dependent tool) ─────────────────
+  publish-nuget:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+          dotnet-quality: preview
+      - name: Set version from tag
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+      - name: Build
+        run: dotnet build PackageUpdateSkill --configuration Release /p:Version=${{ env.VERSION }}
+      - name: Pack
+        run: dotnet pack PackageUpdateSkill --no-build --configuration Release --output ./nupkg /p:Version=${{ env.VERSION }}
+      - name: Push to NuGet
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+  # ── Native AOT binaries per platform ─────────────────────────
+  build-native:
+    needs: test
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+            name: package-update-skill-linux-x64
+          - os: ubuntu-latest
+            rid: linux-arm64
+            name: package-update-skill-linux-arm64
+            cross: true
+          - os: macos-latest
+            rid: osx-arm64
+            name: package-update-skill-osx-arm64
+          - os: windows-latest
+            rid: win-x64
+            name: package-update-skill-win-x64
+          - os: windows-latest
+            rid: win-arm64
+            name: package-update-skill-win-arm64
+
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -20,17 +85,55 @@ jobs:
           dotnet-version: "10.0.x"
           dotnet-quality: preview
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Install cross-compilation toolchain (linux-arm64)
+        if: matrix.cross
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo bash -c 'cat > /etc/apt/sources.list.d/arm64.list << EOF
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs) main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-updates main restricted universe multiverse
+          EOF'
+          sudo sed -i 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          sudo apt-get update
+          sudo apt-get install -y clang llvm lld gcc-aarch64-linux-gnu zlib1g-dev:arm64
 
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
+      - name: Set cross-compilation environment (linux-arm64)
+        if: matrix.cross
+        run: |
+          echo "OBJCOPY=aarch64-linux-gnu-objcopy" >> $GITHUB_ENV
+          echo "STRIP=aarch64-linux-gnu-strip" >> $GITHUB_ENV
 
-      - name: Set version from tag
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
+      - name: Publish native AOT
+        run: dotnet publish PackageUpdateSkill --configuration Release --runtime ${{ matrix.rid }} --self-contained true --output ./publish
 
-      - name: Pack
-        run: dotnet pack PackageUpdateSkill --no-build --configuration Release --output ./nupkg /p:Version=${{ env.VERSION }}
+      - name: Rename binary to match tool command name (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: mv ./publish/PackageUpdateSkill ./publish/package-update-skill
 
-      - name: Push to NuGet
-        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      - name: Rename binary to match tool command name (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Rename-Item ./publish/PackageUpdateSkill.exe package-update-skill.exe
+
+      - name: Verify binary exists
+        if: runner.os != 'Windows'
+        run: file ./publish/package-update-skill
+
+      - name: Verify binary exists
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Get-Item ./publish/package-update-skill.exe | Select-Object Name, Length
+
+      - name: Archive (tar.gz)
+        if: runner.os != 'Windows'
+        run: tar -czf ${{ matrix.name }}.tar.gz -C ./publish .
+
+      - name: Archive (zip)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path ./publish/* -DestinationPath ${{ matrix.name }}.zip
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.name }}.*

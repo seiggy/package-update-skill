@@ -42,18 +42,32 @@ dotnet tool install -g dotnet-script
 
 ## Installation
 
-### Install from NuGet
+### Install as a .NET tool (requires .NET 10 runtime)
 
 ```bash
 dnx package-update-skill
 ```
 
-### Or install as a local/global tool
+Or install manually:
 
 ```bash
 dotnet pack PackageUpdateSkill
 dotnet tool install --global --add-source ./PackageUpdateSkill/nupkg PackageUpdateSkill
 ```
+
+### Download native binary (no runtime required)
+
+Pre-built AOT native binaries are attached to each [GitHub Release](https://github.com/seiggy/package-update-skill/releases) for:
+
+| Platform | Asset |
+|----------|-------|
+| Linux x64 | `package-update-skill-linux-x64.tar.gz` |
+| Linux ARM64 | `package-update-skill-linux-arm64.tar.gz` |
+| macOS ARM64 (Apple Silicon) | `package-update-skill-osx-arm64.tar.gz` |
+| Windows x64 | `package-update-skill-win-x64.zip` |
+| Windows ARM64 | `package-update-skill-win-arm64.zip` |
+
+Extract and place the binary on your `PATH`.
 
 ## Usage
 
