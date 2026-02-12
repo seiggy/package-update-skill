@@ -49,7 +49,7 @@
     <_CopilotPlatforms Include="darwin-arm64" Rid="osx-arm64" Binary="copilot" />
   </ItemGroup>
 
-  <Target Name="_DownloadAllCopilotClis" AfterTargets="Publish" Condition="'$(PackAsTool)' == 'true'">
+  <Target Name="_DownloadAllCopilotClis" AfterTargets="Publish" Condition="'$(PackAsTool)' == 'true' And '$(RuntimeIdentifier)' == ''">
     <PropertyGroup>
       <_CopilotCliCacheRoot>$(IntermediateOutputPath)copilot-cli/$(CopilotCliVersion)</_CopilotCliCacheRoot>
       <_TarCmd Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(SystemRoot)\System32\tar.exe</_TarCmd>
@@ -69,7 +69,9 @@
     <Exec Command="&quot;$(_TarCmd)&quot; -xzf &quot;$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/copilot.tgz&quot; --strip-components=1 -C &quot;$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)&quot;"
           Condition="!Exists('$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/%(_CopilotPlatforms.Binary)')" />
 
-    <!-- Copy all platform binaries into the publish runtimes folder so they get packed -->
+    <!-- Copy all platform binaries into the publish runtimes folder so they get packed.
+         The tool pack's internal Publish uses RID=any (no RuntimeIdentifier set),
+         while AOT publish sets a specific RuntimeIdentifier — skip in that case. -->
     <MakeDir Directories="$(PublishDir)runtimes/%(_CopilotPlatforms.Rid)/native" />
     <Copy SourceFiles="$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/%(_CopilotPlatforms.Binary)"
           DestinationFolder="$(PublishDir)runtimes/%(_CopilotPlatforms.Rid)/native"

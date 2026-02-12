@@ -42,10 +42,8 @@ jobs:
           dotnet-quality: preview
       - name: Set version from tag
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
-      - name: Build
-        run: dotnet build PackageUpdateSkill --configuration Release /p:Version=${{ env.VERSION }}
-      - name: Pack
-        run: dotnet pack PackageUpdateSkill --no-build --configuration Release --output ./nupkg /p:Version=${{ env.VERSION }}
+      - name: Pack (downloads Copilot CLI for all platforms)
+        run: dotnet pack PackageUpdateSkill --configuration Release --output ./nupkg /p:Version=${{ env.VERSION }}
       - name: Verify package was created
         run: ls -la ./nupkg/*.nupkg
       - name: Push to NuGet
@@ -102,8 +100,6 @@ jobs:
             sudo sed -i '/^Types:/ { n; /^Architectures:/! i\Architectures: amd64
             }' /etc/apt/sources.list.d/ubuntu.sources
           else
-            sudo sed -i 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
-          fi
             sudo sed -i 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
           fi
 
