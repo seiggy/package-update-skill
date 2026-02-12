@@ -37,7 +37,7 @@ Generates a complete skill package to `.copilot/skills/<package>-migration/`:
 
 ### .NET Tool (requires .NET 10 runtime)
 ```bash
-dnx package-update-skill
+dnx PackageUpdateSkill
 ```
 
 ### Native Binaries (no runtime required)

@@ -45,7 +45,7 @@ dotnet tool install -g dotnet-script
 ### Install as a .NET tool (requires .NET 10 runtime)
 
 ```bash
-dnx package-update-skill
+dnx PackageUpdateSkill
 ```
 
 Or install manually:
@@ -100,7 +100,7 @@ package-update-skill Microsoft.Agents.AI.OpenAI 1.0.0-preview.251007.1 1.0.0-pre
 package-update-skill Newtonsoft.Json 12.0.3 13.0.3 --model claude-opus-4.6 --dir /path/to/my-project
 
 # Run via dnx without installing
-dnx package-update-skill Microsoft.Agents.AI.OpenAI 1.0.0-preview.251007.1 1.0.0-preview.260209.1
+dnx PackageUpdateSkill Microsoft.Agents.AI.OpenAI 1.0.0-preview.251007.1 1.0.0-preview.260209.1
 ```
 
 ## Architecture
