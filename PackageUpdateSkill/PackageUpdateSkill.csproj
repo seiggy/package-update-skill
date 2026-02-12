@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>package-update-skill</ToolCommandName>
+    <PublishAot>true</PublishAot>
+    <IsTrimmable>true</IsTrimmable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!-- NuGet package metadata -->
+    <PackageId>PackageUpdateSkill</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>seiggy</Authors>
+    <Description>Analyzes NuGet package upgrades between two versions, fetches release notes from GitHub, and generates a GitHub Copilot skill with migration instructions and Roslyn-based migration scripts.</Description>
+    <PackageProjectUrl>https://github.com/seiggy/package-update-skill</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/seiggy/package-update-skill</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>nuget;migration;copilot;skill;roslyn;mcp</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GitHub.Copilot.SDK" Version="*" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageReference Include="ModelContextProtocol" Version="0.8.0-preview.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
