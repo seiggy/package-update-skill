@@ -116,6 +116,7 @@ catch (Exception ex)
 
 // ── Copilot SDK Client ───────────────────────────────────────
 Console.WriteLine("Starting Copilot SDK...");
+await CopilotCliBootstrap.EnsureCliAvailableAsync();
 await using var copilot = new CopilotClient(new CopilotClientOptions { LogLevel = "error" });
 await copilot.StartAsync();
 
