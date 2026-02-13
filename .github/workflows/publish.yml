@@ -42,12 +42,15 @@ jobs:
           dotnet-quality: preview
       - name: Set version from tag
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
-      - name: Build
-        run: dotnet build PackageUpdateSkill --configuration Release /p:Version=${{ env.VERSION }}
-      - name: Pack
-        run: dotnet pack PackageUpdateSkill --no-build --configuration Release --output ./nupkg /p:Version=${{ env.VERSION }}
+      - name: Pack (downloads Copilot CLI for all platforms)
+        run: dotnet pack PackageUpdateSkill --configuration Release --output ./nupkg /p:Version=${{ env.VERSION }}
+      - name: Verify package was created
+        run: ls -la ./nupkg/*.nupkg
       - name: Push to NuGet
-        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        if: env.NUGET_API_KEY != ''
+        run: dotnet nuget push "./nupkg/*.nupkg" --api-key "${{ secrets.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
   # ── Native AOT binaries per platform ─────────────────────────
   build-native:
@@ -89,11 +92,24 @@ jobs:
         if: matrix.cross
         run: |
           sudo dpkg --add-architecture arm64
-          sudo bash -c 'cat > /etc/apt/sources.list.d/arm64.list << EOF
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs) main restricted universe multiverse
-          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-updates main restricted universe multiverse
-          EOF'
-          sudo sed -i 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+
+          # Pin existing sources to amd64 only (Noble uses DEB822 format)
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sudo sed -i 's/^Architectures:.*/Architectures: amd64/' /etc/apt/sources.list.d/ubuntu.sources
+            # For any Types line that is not immediately followed by an Architectures line, add Architectures: amd64
+            sudo sed -i '/^Types:/ { n; /^Architectures:/! i\Architectures: amd64
+            }' /etc/apt/sources.list.d/ubuntu.sources
+          else
+            sudo sed -i 's/^deb http/deb [arch=amd64] http/g' /etc/apt/sources.list
+          fi
+
+          # Add arm64 ports repo
+          CODENAME=$(lsb_release -cs)
+          sudo tee /etc/apt/sources.list.d/arm64-ports.list > /dev/null << EOF
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${CODENAME} main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports ${CODENAME}-updates main restricted universe multiverse
+          EOF
+
           sudo apt-get update
           sudo apt-get install -y clang llvm lld gcc-aarch64-linux-gnu zlib1g-dev:arm64
 

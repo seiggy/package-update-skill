@@ -8,7 +8,7 @@ using PackageUpdateSkill.Services;
 if (args.Length < 3)
 {
     Console.Error.WriteLine("Usage: package-update-skill <PackageName> <FromVersion> <ToVersion> [--model <model>] [--dir <repoDir>] [--paranoid] [--debug]");
-    Console.Error.WriteLine("Example: dnx package-update-skill Newtonsoft.Json 12.0.3 13.0.3 --model gpt-5");
+    Console.Error.WriteLine("Example: dnx PackageUpdateSkill Newtonsoft.Json 12.0.3 13.0.3 --model gpt-5");
     Console.Error.WriteLine();
     Console.Error.WriteLine("Options:");
     Console.Error.WriteLine("  --model <model>   LLM model to use (default: gpt-5)");

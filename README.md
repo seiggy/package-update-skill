@@ -45,7 +45,7 @@ dotnet tool install -g dotnet-script
 ### Install as a .NET tool (requires .NET 10 runtime)
 
 ```bash
-dnx package-update-skill
+dnx PackageUpdateSkill
 ```
 
 Or install manually:
@@ -57,7 +57,27 @@ dotnet tool install --global --add-source ./PackageUpdateSkill/nupkg PackageUpda
 
 ### Download native binary (no runtime required)
 
-Pre-built AOT native binaries are attached to each [GitHub Release](https://github.com/seiggy/package-update-skill/releases) for:
+**Linux / macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/seiggy/package-update-skill/master/install.sh | sh
+```
+
+Or set a specific version and install directory:
+```bash
+VERSION=v0.1.0 INSTALL_DIR=~/.local/bin curl -fsSL https://raw.githubusercontent.com/seiggy/package-update-skill/master/install.sh | sh
+```
+
+**Windows (PowerShell):**
+```powershell
+# Download latest release for Windows x64
+$release = Invoke-RestMethod "https://api.github.com/repos/seiggy/package-update-skill/releases/latest"
+$asset = $release.assets | Where-Object { $_.name -match "win-x64.zip" }
+Invoke-WebRequest $asset.browser_download_url -OutFile package-update-skill.zip
+Expand-Archive package-update-skill.zip -DestinationPath "$env:LOCALAPPDATA\Programs\package-update-skill"
+# Add to PATH in your profile
+```
+
+Pre-built AOT native binaries are attached to each [GitHub Release](https://github.com/seiggy/package-update-skill/releases):
 
 | Platform | Asset |
 |----------|-------|
@@ -66,8 +86,6 @@ Pre-built AOT native binaries are attached to each [GitHub Release](https://gith
 | macOS ARM64 (Apple Silicon) | `package-update-skill-osx-arm64.tar.gz` |
 | Windows x64 | `package-update-skill-win-x64.zip` |
 | Windows ARM64 | `package-update-skill-win-arm64.zip` |
-
-Extract and place the binary on your `PATH`.
 
 ## Usage
 
@@ -100,7 +118,7 @@ package-update-skill Microsoft.Agents.AI.OpenAI 1.0.0-preview.251007.1 1.0.0-pre
 package-update-skill Newtonsoft.Json 12.0.3 13.0.3 --model claude-opus-4.6 --dir /path/to/my-project
 
 # Run via dnx without installing
-dnx package-update-skill Microsoft.Agents.AI.OpenAI 1.0.0-preview.251007.1 1.0.0-preview.260209.1
+dnx PackageUpdateSkill Microsoft.Agents.AI.OpenAI 1.0.0-preview.251007.1 1.0.0-preview.260209.1
 ```
 
 ## Architecture
