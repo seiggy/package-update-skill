@@ -13,7 +13,7 @@
 
     <!-- NuGet package metadata -->
     <PackageId>PackageUpdateSkill</PackageId>
-    <Version>0.1.2</Version>
+    <Version>0.2.0</Version>
     <Authors>seiggy</Authors>
     <Description>Analyzes NuGet package upgrades between two versions, fetches release notes from GitHub, and generates a GitHub Copilot skill with migration instructions and Roslyn-based migration scripts.</Description>
     <PackageProjectUrl>https://github.com/seiggy/package-update-skill</PackageProjectUrl>
@@ -28,6 +28,7 @@
     <PackageReference Include="GitHub.Copilot.SDK" Version="*" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
     <PackageReference Include="ModelContextProtocol" Version="0.8.0-preview.1" />
+    <PackageReference Include="Spectre.Console" Version="0.54.1-alpha.0.37" />
   </ItemGroup>
 
   <ItemGroup>
