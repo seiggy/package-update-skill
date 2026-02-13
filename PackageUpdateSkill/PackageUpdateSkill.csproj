@@ -13,7 +13,7 @@
 
     <!-- NuGet package metadata -->
     <PackageId>PackageUpdateSkill</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.2</Version>
     <Authors>seiggy</Authors>
     <Description>Analyzes NuGet package upgrades between two versions, fetches release notes from GitHub, and generates a GitHub Copilot skill with migration instructions and Roslyn-based migration scripts.</Description>
     <PackageProjectUrl>https://github.com/seiggy/package-update-skill</PackageProjectUrl>
@@ -34,48 +34,16 @@
     <None Include="..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
-  <!--
-    The Copilot SDK only downloads the CLI binary for the current build platform.
-    For a .NET tool package (PackAsTool), we need ALL platform binaries so the tool
-    works when installed on any OS. This target downloads all 6 platform variants
-    and includes them in the nupkg.
-  -->
-  <ItemGroup>
-    <_CopilotPlatforms Include="win32-x64" Rid="win-x64" Binary="copilot.exe" />
-    <_CopilotPlatforms Include="win32-arm64" Rid="win-arm64" Binary="copilot.exe" />
-    <_CopilotPlatforms Include="linux-x64" Rid="linux-x64" Binary="copilot" />
-    <_CopilotPlatforms Include="linux-arm64" Rid="linux-arm64" Binary="copilot" />
-    <_CopilotPlatforms Include="darwin-x64" Rid="osx-x64" Binary="copilot" />
-    <_CopilotPlatforms Include="darwin-arm64" Rid="osx-arm64" Binary="copilot" />
-  </ItemGroup>
-
-  <Target Name="_DownloadAllCopilotClis" AfterTargets="Publish" Condition="'$(PackAsTool)' == 'true' And '$(RuntimeIdentifier)' == ''">
-    <PropertyGroup>
-      <_CopilotCliCacheRoot>$(IntermediateOutputPath)copilot-cli/$(CopilotCliVersion)</_CopilotCliCacheRoot>
-      <_TarCmd Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(SystemRoot)\System32\tar.exe</_TarCmd>
-      <_TarCmd Condition="'$(_TarCmd)' == ''">tar</_TarCmd>
-    </PropertyGroup>
-
-    <MakeDir Directories="$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)" Condition="!Exists('$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/%(_CopilotPlatforms.Binary)')" />
-
-    <Message Importance="high" Text="Downloading Copilot CLI $(CopilotCliVersion) for %(_CopilotPlatforms.Identity)..."
-             Condition="!Exists('$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/%(_CopilotPlatforms.Binary)')" />
-
-    <DownloadFile SourceUrl="https://registry.npmjs.org/@github/copilot-%(_CopilotPlatforms.Identity)/-/copilot-%(_CopilotPlatforms.Identity)-$(CopilotCliVersion).tgz"
-                  DestinationFolder="$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)"
-                  DestinationFileName="copilot.tgz"
-                  Condition="!Exists('$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/%(_CopilotPlatforms.Binary)')" />
-
-    <Exec Command="&quot;$(_TarCmd)&quot; -xzf &quot;$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/copilot.tgz&quot; --strip-components=1 -C &quot;$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)&quot;"
-          Condition="!Exists('$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/%(_CopilotPlatforms.Binary)')" />
-
-    <!-- Copy all platform binaries into the publish runtimes folder so they get packed.
-         The tool pack's internal Publish uses RID=any (no RuntimeIdentifier set),
-         while AOT publish sets a specific RuntimeIdentifier — skip in that case. -->
-    <MakeDir Directories="$(PublishDir)runtimes/%(_CopilotPlatforms.Rid)/native" />
-    <Copy SourceFiles="$(_CopilotCliCacheRoot)/%(_CopilotPlatforms.Identity)/%(_CopilotPlatforms.Binary)"
-          DestinationFolder="$(PublishDir)runtimes/%(_CopilotPlatforms.Rid)/native"
-          SkipUnchangedFiles="true" />
+  <!-- Remove the Copilot CLI native binary from the tool package publish output.
+       The binary is ~55-130 MB per platform and would make the nupkg exceed NuGet's
+       250 MB limit. Instead, CopilotCliBootstrap.cs downloads it on first run. -->
+  <Target Name="_ExcludeCopilotCliFromToolPack" AfterTargets="Publish" Condition="'$(PackAsTool)' == 'true' And '$(RuntimeIdentifier)' == ''">
+    <ItemGroup>
+      <_CopilotRuntimeFiles Include="$(PublishDir)runtimes/**/copilot" />
+      <_CopilotRuntimeFiles Include="$(PublishDir)runtimes/**/copilot.exe" />
+    </ItemGroup>
+    <Delete Files="@(_CopilotRuntimeFiles)" />
+    <Message Importance="high" Text="Excluded Copilot CLI native binaries from tool package (downloaded on first run)" />
   </Target>
 
 </Project>
