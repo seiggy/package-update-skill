@@ -52,7 +52,7 @@ Or install manually:
 
 ```bash
 dotnet pack PackageUpdateSkill
-dotnet tool install --global --add-source ./PackageUpdateSkill/nupkg PackageUpdateSkill
+dotnet tool install --global PackageUpdateSkill
 ```
 
 ### Download native binary (no runtime required)
