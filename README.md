@@ -1,3 +1,4 @@
+![Package Update Skill Logo](./banner.png)
 # Package Update Skill
 
 A .NET 10 tool that analyzes NuGet package upgrades between two versions, fetches release notes from GitHub, and generates a GitHub Copilot skill with migration instructions, breakdown docs, and Roslyn-based code transformation scripts.
